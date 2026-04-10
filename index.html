@@ -2,23 +2,46 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>奥莱特价图全自动版 (支持价格实时修改)</title>
+    <title>奥莱特价图全自动版 (中英文智能字体)</title>
     <style>
-        body { text-align: center; font-family: 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif; background: #f4f5f7; padding: 20px; margin: 0; }
+        /* ============ 【引入你的专属字体包】 ============ */
+        
+        /* 1. 英文常规体 */
+        @font-face {
+            font-family: 'CompanyEN'; 
+            src: url('./myfont-regular-EN.woff2') format('woff2'); 
+            font-weight: normal; 
+        }
+
+        /* 2. 英文粗体 */
+        @font-face {
+            font-family: 'CompanyEN'; 
+            src: url('./myfont-Bold-EN.woff2') format('woff2'); 
+            font-weight: bold; 
+        }
+
+        /* 3. 中文粗体 */
+        @font-face {
+            font-family: 'CompanyZH'; 
+            src: url('./myfont-Bold-CN.woff2') format('woff2'); 
+            font-weight: bold; 
+        }
+
+        body { text-align: center; font-family: 'CompanyEN', 'CompanyZH', 'Microsoft YaHei', sans-serif; background: #f4f5f7; padding: 20px; margin: 0; }
         .edit-panel { background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); max-width: 900px; margin: 0 auto 20px auto; display: flex; flex-direction: column; gap: 15px; text-align: left; }
         .edit-row { display: flex; align-items: center; gap: 15px; }
         .edit-row label { font-weight: bold; color: #4a5777; font-size: 16px; min-width: 170px; }
-        .edit-row input[type="text"] { flex: 1; padding: 10px; font-size: 16px; border: 2px solid #e5e5e5; border-radius: 6px; outline: none; transition: border-color 0.2s; }
-        .edit-row input[type="number"] { width: 80px; padding: 10px; font-size: 16px; text-align: center; border: 2px solid #e5e5e5; border-radius: 6px; outline: none; transition: border-color 0.2s; }
+        .edit-row input[type="text"] { flex: 1; padding: 10px; font-size: 16px; border: 2px solid #e5e5e5; border-radius: 6px; outline: none; transition: border-color 0.2s; font-family: inherit;}
+        .edit-row input[type="number"] { width: 80px; padding: 10px; font-size: 16px; text-align: center; border: 2px solid #e5e5e5; border-radius: 6px; outline: none; transition: border-color 0.2s; font-family: inherit;}
         .edit-row input:focus { border-color: #d31334; }
         .hint-text { color: #888; font-size: 14px; }
         
-        .qr-btn { padding: 8px 16px; font-size: 14px; cursor: pointer; background: #4a5777; color: white; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        .qr-btn { padding: 8px 16px; font-size: 14px; cursor: pointer; background: #4a5777; color: white; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; font-family: inherit;}
         .qr-btn:hover { background: #35405a; }
         
         .canvas-container { border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 900px; height: 500px; position: relative; margin: 0 auto; background: white; }
         canvas { width: 100% !important; height: 100% !important; }
-        .btn { margin-top: 20px; padding: 12px 24px; font-size: 16px; cursor: pointer; background: #d31334; color: white; border: none; border-radius: 6px; font-weight: bold; }
+        .btn { margin-top: 20px; padding: 12px 24px; font-size: 16px; cursor: pointer; background: #d31334; color: white; border: none; border-radius: 6px; font-weight: bold; font-family: inherit;}
         .btn:hover { background: #b00f2b; }
         .status-text { color: #4a5777; font-weight: bold; margin-top: 15px; display: inline-block; margin-right: 15px; }
     </style>
@@ -66,10 +89,9 @@
     <button class="btn" onclick="downloadImg()">一键保存高清图片</button>
 
     <script>
-        // ============ 本地记忆二维码逻辑 ============
+        // 本地记忆二维码
         let qrLoaded = false;
         const qrImg = new Image();
-        
         const savedQrBase64 = localStorage.getItem('myStoreQrCode');
         if (savedQrBase64) {
             qrImg.onload = function() {
@@ -84,12 +106,10 @@
         function handleQrUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = function(e) {
                 const base64Str = e.target.result;
                 localStorage.setItem('myStoreQrCode', base64Str);
-                
                 qrImg.onload = function() {
                     qrLoaded = true;
                     document.getElementById('qrStatusText').innerText = "✅ 上传成功并已记忆！";
@@ -101,29 +121,25 @@
             reader.readAsDataURL(file); 
         }
 
-        // ============ 自动日期与数据提取 ============
+        // 提取数据
         const now = new Date();
         const autoDeadline = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} 截止20:00`;
-
         const params = new URLSearchParams(window.location.search);
         const sku = params.get('sku') || '100275034';
         const color = params.get('color') || '默认颜色';
         const oriPrice = params.get('oriprice') || '0';
         const imgCode = params.get('imgcode') || 'LM5651A-031382'; 
         const deadline = params.get('deadline') || autoDeadline;
-        
-        // 【关键改动】把 price 从固定不变的 const 换成可以被修改的 let
         let price = params.get('price') || '0'; 
         let productName = params.get('name') || '产品名称'; 
         let sizeInfo = params.get('size') || '尺码信息'; 
         let backSuffix = '2'; 
 
-        // 将读取到的数据填入输入框
         document.getElementById('nameInput').value = productName;
-        document.getElementById('priceInput').value = price; // 新增：填充价格输入框
+        document.getElementById('priceInput').value = price; 
         document.getElementById('sizeInput').value = sizeInfo;
 
-        // ============ 初始化画布 ============
+        // 画布设置
         const canvas = document.getElementById('posterCanvas');
         const ctx = canvas.getContext('2d');
         const logicalWidth = 900;
@@ -136,9 +152,7 @@
         let frontLoaded = false;
         let backLoaded = false;
 
-        drawBasePoster();
-
-        // ============ 图片抓取 ============
+        // 图片抓取
         let cleanCode = imgCode.replace(/-/g, '_').replace(/_[0-9]$/, ''); 
         const frontImg = new Image();
         const backImg = new Image();
@@ -153,7 +167,6 @@
         }
 
         function updateText() {
-            // 【关键改动】这里不仅更新产品名和尺码，也同时更新价格
             productName = document.getElementById('nameInput').value;
             price = document.getElementById('priceInput').value; 
             sizeInfo = document.getElementById('sizeInput').value;
@@ -208,19 +221,12 @@
         frontImg.src = `https://wsrv.nl/?url=${encodeURIComponent(targetFrontUrl)}`;
         loadBackImage();
 
-        // ============ 绘图函数 ============
-        function drawFrontImage() {
-            drawScaledImage(frontImg, 0, 0, 400, 500, true);
-        }
-
+        // 绘图
+        function drawFrontImage() { drawScaledImage(frontImg, 0, 0, 400, 500, true); }
         function drawBackImage() {
             const size = 130;
-            ctx.save();
-            ctx.shadowColor = 'rgba(0,0,0,0.3)';
-            ctx.shadowBlur = 10;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(260, 360, size, size);
-            ctx.restore(); 
+            ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 10;
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(260, 360, size, size); ctx.restore(); 
             drawScaledImage(backImg, 263, 363, size - 6, size - 6, true);
         }
 
@@ -239,39 +245,57 @@
             if (!frontLoaded) { ctx.fillStyle = '#e5e5e5'; ctx.fillRect(0, 0, 400, 500); }
 
             ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
-            ctx.font = 'bold 22px Arial'; ctx.fillText(productName, 650, 70);
-            ctx.font = '20px Arial'; ctx.fillText('色号：' + color, 650, 115);
+            
+            // ============ 【关键：中英文智能字体调用】 ============
+            // 加粗字体（大标题、惊喜价）：优先英文粗体，后接中文粗体
+            ctx.font = 'bold 22px CompanyEN, CompanyZH, "Microsoft YaHei", Arial'; 
+            ctx.fillText(productName, 650, 70);
+            
+            // 常规字体（色号、尺码等）：优先英文常规体，中文无常规体则无缝替补为微软雅黑
+            ctx.font = 'normal 20px CompanyEN, "Microsoft YaHei", Arial'; 
+            ctx.fillText('色号：' + color, 650, 115);
+            
+            ctx.font = 'normal 16px CompanyEN, "Microsoft YaHei", Arial'; 
             ctx.fillText('吊牌价：¥ ' + oriPrice, 650, 160);
             ctx.beginPath(); ctx.moveTo(580, 154); ctx.lineTo(720, 154); ctx.strokeStyle = '#fff'; ctx.stroke();
             
-            // 惊喜折扣现在会读取动态修改的 price 变量
-            ctx.font = 'bold 26px Arial'; ctx.fillText('惊喜折扣：¥ ' + price + '/件', 650, 215);
-            ctx.font = '18px Arial'; ctx.fillText('尺码：' + sizeInfo, 650, 260);
+            ctx.font = 'bold 26px CompanyEN, CompanyZH, "Microsoft YaHei", Arial'; 
+            ctx.fillText('惊喜折扣：¥ ' + price + '/件', 650, 215);
             
-            // 绘制企微二维码
-            const qrBlockX = 650 - 55;
-            const qrBlockY = 280;
-            const qrBlockSize = 110;
-
+            ctx.font = 'normal 18px CompanyEN, "Microsoft YaHei", Arial'; 
+            ctx.fillText('尺码：' + sizeInfo, 650, 260);
+            
+            const qrBlockX = 650 - 55; const qrBlockY = 280; const qrBlockSize = 110;
             if (qrLoaded) {
-                ctx.fillStyle = 'white'; 
-                ctx.fillRect(qrBlockX - 5, qrBlockY - 5, qrBlockSize + 10, qrBlockSize + 10);
+                ctx.fillStyle = 'white'; ctx.fillRect(qrBlockX - 5, qrBlockY - 5, qrBlockSize + 10, qrBlockSize + 10);
                 ctx.drawImage(qrImg, qrBlockX, qrBlockY, qrBlockSize, qrBlockSize);
             } else {
-                ctx.fillStyle = 'white'; 
-                ctx.fillRect(qrBlockX, qrBlockY, qrBlockSize, qrBlockSize);
-                ctx.fillStyle = 'black'; ctx.font = '16px Arial'; ctx.fillText('扫码购买', 650, 340);
+                ctx.fillStyle = 'white'; ctx.fillRect(qrBlockX, qrBlockY, qrBlockSize, qrBlockSize);
+                ctx.fillStyle = 'black'; 
+                ctx.font = 'normal 16px CompanyEN, "Microsoft YaHei", Arial'; 
+                ctx.fillText('扫码购买', 650, 340);
             }
-            ctx.fillStyle = '#ffffff'; ctx.font = '14px Arial'; ctx.fillText('扫码添加企微咨询/购买', 650, 415);
+            
+            ctx.fillStyle = '#ffffff'; 
+            ctx.font = 'normal 14px CompanyEN, "Microsoft YaHei", Arial'; 
+            ctx.fillText('扫码添加企微咨询/购买', 650, 415);
 
-            ctx.fillStyle = 'white'; ctx.font = '16px Arial'; ctx.fillText('活动时间', 650, 455);
-            ctx.font = 'bold 18px Arial'; ctx.fillText(deadline, 650, 475);
-            ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.textAlign = 'right'; ctx.font = '14px Arial'; ctx.fillText(sku, 880, 490);
+            ctx.fillStyle = 'white'; 
+            ctx.font = 'normal 16px CompanyEN, "Microsoft YaHei", Arial'; 
+            ctx.fillText('活动时间', 650, 455);
+            
+            ctx.font = 'bold 18px CompanyEN, CompanyZH, "Microsoft YaHei", Arial'; 
+            ctx.fillText(deadline, 650, 475);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.textAlign = 'right'; 
+            ctx.font = 'normal 14px CompanyEN, Arial'; 
+            ctx.fillText(sku, 880, 490);
         }
 
         function drawWatermark() {
             ctx.globalAlpha = 0.5; ctx.fillStyle = '#000000'; ctx.textAlign = 'left';
-            ctx.font = 'bold 22px Arial'; ctx.fillText('@lululemon成都佛罗伦萨小镇', 20, 250);
+            ctx.font = 'bold 22px CompanyEN, CompanyZH, "Microsoft YaHei", Arial'; 
+            ctx.fillText('@lululemon成都佛罗伦萨小镇', 20, 250);
             ctx.globalAlpha = 1.0; 
         }
 
@@ -292,6 +316,11 @@
             link.href = canvas.toDataURL('image/png');
             link.click();
         }
+
+        // 核心技术：强制等待这三个专属字体全部加载完毕，再执行画图！
+        document.fonts.ready.then(function() {
+            redrawAll();
+        });
     </script>
 </body>
 </html>
